@@ -1,0 +1,335 @@
+
+"""
+LDCW6123 - Part 2: Interactive Program (Python)
+Topic: YouTube as a Disruptive Innovation (Clayton Christensen's model)
+Program: YouTube Video Recommendation Assistant
+
+Note: The assignment brief lists C++ as the default language for Part 2,
+but the lecturer confirmed Python is allowed for this group.
+
+------------------------------------------------------------------
+HOW THIS FILE IS ORGANIZED (read top to bottom):
+  1. Video data model      -> what one "video" looks like
+  2. Video catalog         -> the list of sample videos
+  3. Small helper functions-> reused for input, printing
+  4. Feature functions     -> one function per menu option
+  5. Menu + main loop      -> ties everything together
+------------------------------------------------------------------
+"""
+
+from dataclasses import dataclass
+from typing import List
+
+
+# ============================================================
+# SECTION 1: Data model
+# ============================================================
+# A "Video" holds everything the program needs to know about one
+# video: its title, category, mood, length, popularity, channel,
+# and a short description shown to the user.
+
+@dataclass
+class Video:
+    title: str
+    category: str    # e.g. Tech, Music, Fitness, Education, Comedy, Gaming, Vlog
+    mood: str         # e.g. Relaxing, Exciting, Informative, Funny
+    duration: int      # length in minutes
+    views: int         # popularity, in millions (used only for sorting/display)
+    channel: str
+    description: str
+
+
+# ============================================================
+# SECTION 2: Video catalog (sample data)
+# ============================================================
+# This acts as a small "database" of videos. To add a new video,
+# copy one line's pattern and adjust the values. Categories and
+# moods should match one of the options shown in the menus below.
+
+def load_catalog() -> List[Video]:
+    """Return the full list of videos available to recommend."""
+    return [
+        Video("Building a Startup in 2026", "Tech", "Informative", 18, 4,
+              "TechInsights", "A practical breakdown of launching a small startup with limited funds."),
+        Video("Relaxing Lo-fi Beats to Study", "Music", "Relaxing", 60, 25,
+              "ChillHop Radio", "Continuous lo-fi mix ideal for study or work sessions."),
+        Video("10-Minute Full Body Workout", "Fitness", "Exciting", 10, 12,
+              "FitDaily", "A quick, no-equipment workout routine for busy schedules."),
+        Video("History of the Ottoman Empire", "Education", "Informative", 25, 8,
+              "HistoryHub", "A concise documentary-style overview of a major historical era."),
+        Video("Funniest Cat Fails Compilation", "Comedy", "Funny", 8, 30,
+              "PetLaughs", "A lighthearted compilation of cats failing at everyday tasks."),
+        Video("Speedrunning a Classic Game", "Gaming", "Exciting", 22, 15,
+              "SpeedRunner99", "A fast-paced walkthrough showcasing advanced gaming techniques."),
+        Video("Morning Routine for Productivity", "Vlog", "Relaxing", 14, 6,
+              "DailyAhmed", "A calm, practical look at building an effective morning routine."),
+        Video("Understanding Black Holes", "Education", "Informative", 16, 20,
+              "SpaceSimplified", "An accessible explanation of black holes using simple visuals."),
+        Video("Street Food Tour in Kuala Lumpur", "Vlog", "Exciting", 20, 9,
+              "FoodWanderer", "A lively tour through KL's best street food stalls."),
+        Video("Guitar Lesson: Beginner Chords", "Music", "Informative", 12, 5,
+              "StringsAndFrets", "Step-by-step guide to your first guitar chords."),
+        Video("Stand-Up Comedy Highlights", "Comedy", "Funny", 15, 18,
+              "LaughTrackTV", "Best moments from a stand-up comedy special."),
+        Video("Meditation for Beginners", "Fitness", "Relaxing", 10, 7,
+              "CalmMind", "A gentle guided meditation session for stress relief."),
+        Video("How AI Is Changing Everyday Apps", "Tech", "Informative", 20, 11,
+              "TechInsights", "An overview of practical AI features appearing in daily-use apps."),
+        Video("Coding a Simple Game in a Weekend", "Tech", "Exciting", 28, 6,
+              "DevWeekend", "A hands-on look at building a small game from scratch quickly."),
+        Video("Piano Cover: Popular Movie Themes", "Music", "Relaxing", 35, 14,
+              "KeysAndNotes", "A soothing piano medley of well-known film soundtracks."),
+        Video("Top 10 Workout Songs 2026", "Music", "Exciting", 45, 22,
+              "BeatDrop", "An energetic playlist designed to keep your workout pace up."),
+        Video("Beginner Yoga for Flexibility", "Fitness", "Relaxing", 20, 10,
+              "FitDaily", "A gentle yoga session focused on improving flexibility and posture."),
+        Video("HIIT Cardio Challenge", "Fitness", "Exciting", 15, 17,
+              "FitDaily", "A high-intensity interval training session for a quick calorie burn."),
+        Video("The Science of Sleep", "Education", "Informative", 19, 13,
+              "SpaceSimplified", "An evidence-based explanation of how sleep cycles affect health."),
+        Video("Crash Course: Basic Economics", "Education", "Informative", 22, 16,
+              "HistoryHub", "A simplified introduction to supply, demand, and market forces."),
+        Video("Try Not to Laugh Challenge", "Comedy", "Funny", 11, 27,
+              "LaughTrackTV", "A montage of clips designed to make even a straight face crack."),
+        Video("Awkward First Date Sketches", "Comedy", "Funny", 9, 21,
+              "PetLaughs", "Comedic short sketches about the ups and downs of first dates."),
+        Video("Open World Game Exploration", "Gaming", "Relaxing", 30, 9,
+              "SpeedRunner99", "A relaxed, no-commentary exploration of a large open-world game."),
+        Video("Ranking the Best Game Soundtracks", "Gaming", "Informative", 17, 8,
+              "SpeedRunner99", "A discussion ranking memorable video game music compositions."),
+        Video("A Day in the Life of a Student", "Vlog", "Relaxing", 16, 5,
+              "DailyAhmed", "A calm walkthrough of a typical university student's daily routine."),
+        Video("Backpacking Through Southeast Asia", "Vlog", "Exciting", 24, 12,
+              "FoodWanderer", "Highlights from a budget backpacking trip across several countries."),
+        Video("The Vocabulary of Magic: The Gathering", "Gaming", "Informative", 20, 7,
+              "CardLoreTV", "A breakdown of key terms and jargon used by Magic: The Gathering players."),
+        Video("How to find your art style", "Education", "Informative", 15, 9,
+              "ArtJourney", "Guidance on experimenting and discovering a personal, recognizable art style."),
+        Video("Watch this BEFORE you buy a Camera!", "Tech", "Informative", 12, 14,
+              "GearReviewer", "Key things to check before purchasing a camera, aimed at beginners."),
+        Video("The ENTIRE History of ROME", "Education", "Informative", 42, 19,
+              "HistoryHub", "A sweeping overview tracing Rome from its founding to the fall of the empire."),
+    ]
+
+
+# ============================================================
+# SECTION 3: Small helper functions
+# ============================================================
+# These are reused by several features below: reading a valid
+# number from the user, and printing headers / video rows neatly.
+
+def read_integer(prompt: str, min_val: int, max_val: int) -> int:
+    """Keep asking until the user types a whole number inside [min_val, max_val]."""
+    while True:
+        raw = input(prompt).strip()          # get text from the user
+        if raw.isdigit():                     # check it's only digits (no letters/symbols)
+            value = int(raw)                  # convert text "5" into number 5
+            if min_val <= value <= max_val:   # check it's within the allowed range
+                return value                   # good input -> stop asking
+        print(f"Invalid input. Enter a number from {min_val} to {max_val}.")
+
+
+def print_header(title: str) -> None:
+    """Print a title surrounded by '=' lines, used to separate each screen."""
+    print("\n" + "=" * 60)
+    print(title)
+    print("=" * 60)
+
+
+def print_video_table_header() -> None:
+    """Print the column titles for a table of videos."""
+    print(f"{'#':<3}{'Title':<32}{'Category':<12}{'Mood':<13}{'Min':<6}{'Views(M)':<8}Channel")
+    print("-" * 90)
+
+
+def print_video(video: Video, index: int) -> None:
+    """Print one video as a numbered row, followed by its description."""
+    print(f"{index:<3}{video.title:<32}{video.category:<12}{video.mood:<13}"
+          f"{video.duration:<6}{video.views:<8}{video.channel}")
+    print(f"    {video.description}")
+
+
+def print_video_list(videos: List[Video]) -> None:
+    """Print a full table (header + rows) for a list of videos."""
+    print_video_table_header()
+    for i, video in enumerate(videos, start=1):
+        print_video(video, i)
+
+
+# ============================================================
+# SECTION 4: Feature functions (one per menu option)
+# ============================================================
+
+def add_to_watch_later(matches: List[Video], watch_later: List[Video]) -> None:
+    """Optionally let the user save one of the just-shown videos to their list."""
+    if not matches:          # nothing was shown, so nothing to save
+        return
+
+    # ask if the user even wants to save something
+    save_choice = read_integer("\nAdd one video to Watch Later? 1 = Yes, 2 = No: ", 1, 2)
+    if save_choice == 2:
+        print("No video added.")
+        return
+
+    # ask which one, then convert "1st item" (choice) to a list index (choice - 1)
+    video_choice = read_integer("Enter the video number to save: ", 1, len(matches))
+    selected = matches[video_choice - 1]
+
+    # avoid saving the same video twice
+    already_saved = any(v.title == selected.title for v in watch_later)
+    if already_saved:
+        print(f'"{selected.title}" is already in Watch Later.')
+        return
+
+    watch_later.append(selected)   # add it to the saved list
+    print(f'"{selected.title}" added to Watch Later.')
+
+
+def recommend_by_category(catalog: List[Video], watch_later: List[Video]) -> None:
+    """Menu option 1: show videos that match a category typed by the user."""
+    print_header("RECOMMEND BY CATEGORY")
+    print("Available categories: Tech, Music, Fitness, Education, Comedy, Gaming, Vlog")
+    category = input("Enter category: ").strip().lower()   # clean up user's text
+
+    # keep only the videos whose category matches what the user typed
+    matches = [v for v in catalog if v.category.lower() == category]
+    if not matches:
+        print("No videos found in that category.")
+        return
+
+    print_video_list(matches)             # show the matching videos
+    add_to_watch_later(matches, watch_later)  # offer to save one
+
+
+def recommend_by_mood(catalog: List[Video], watch_later: List[Video]) -> None:
+    """Menu option 2: show videos matching a mood, most popular first."""
+    print_header("RECOMMEND BY MOOD")
+    print("Available moods: Relaxing, Exciting, Informative, Funny")
+    mood = input("Enter mood: ").strip().lower()
+
+    # keep only the videos with a matching mood
+    matches = [v for v in catalog if v.mood.lower() == mood]
+    if not matches:
+        print("No videos found for that mood.")
+        return
+
+    matches.sort(key=lambda v: v.views, reverse=True)  # biggest "views" number first
+    print_video_list(matches)
+    add_to_watch_later(matches, watch_later)
+
+
+def filter_by_time(catalog: List[Video], watch_later: List[Video]) -> None:
+    """Menu option 3: show only videos that fit inside the user's free time."""
+    print_header("FILTER BY AVAILABLE WATCH TIME")
+    max_minutes = read_integer("How many minutes do you have? (5-120): ", 5, 120)
+
+    # keep only videos that are short enough to finish in the time given
+    matches = [v for v in catalog if v.duration <= max_minutes]
+    if not matches:
+        print("No videos fit that time limit. Try a higher number.")
+        return
+
+    matches.sort(key=lambda v: v.duration)  # smallest duration number first
+    print_video_list(matches)
+    add_to_watch_later(matches, watch_later)
+
+
+def view_watch_later(watch_later: List[Video]) -> None:
+    """Menu option 4: show everything saved so far, plus total watch time."""
+    print_header("MY WATCH LATER LIST")
+    if not watch_later:
+        print("Your Watch Later list is empty.")
+        return
+
+    print_video_list(watch_later)
+    total_minutes = sum(v.duration for v in watch_later)  # add up every video's length
+    print(f"\nTotal: {len(watch_later)} video(s), {total_minutes} minutes of watch time.")
+
+
+def clear_watch_later(watch_later: List[Video]) -> None:
+    """Menu option 5: empty the Watch Later list, after confirmation."""
+    print_header("CLEAR WATCH LATER LIST")
+    if not watch_later:
+        print("The list is already empty.")
+        return
+
+    confirm = read_integer("Are you sure? 1 = Clear, 2 = Cancel: ", 1, 2)
+    if confirm == 1:
+        watch_later.clear()   # empty the list, keeping the same variable
+        print("Watch Later list cleared.")
+    else:
+        print("Cancelled.")
+
+
+def about_youtube_innovation() -> None:
+    """Menu option 6: short write-up linking this program to Part 1's poster."""
+    print_header("ABOUT YOUTUBE AS A DISRUPTIVE INNOVATION")
+    print("YouTube launched in 2005, allowing anyone to upload and share video")
+    print("content online, at a time when broadcasting was controlled by TV")
+    print("networks and cable providers.\n")
+    print("In Clayton Christensen's Disruptive Innovation model, YouTube began")
+    print("as a low-end, low-quality alternative (simple, low-resolution home")
+    print("videos) that served an underserved market: everyday people who")
+    print("wanted to publish content without needing a broadcast license.")
+    print("Over time, improvements in video quality, monetization (AdSense),")
+    print("mobile access, and recommendation algorithms let YouTube move")
+    print("up-market, eventually disrupting traditional television and")
+    print("cable advertising by offering personalized, on-demand content.")
+
+
+# ============================================================
+# SECTION 5: Menu + main loop
+# ============================================================
+
+MENU_MIN_OPTION = 1
+MENU_MAX_OPTION = 7
+
+
+def display_menu() -> None:
+    """Print the list of things the user can choose from."""
+    print("\n---------------- YouTube Recommendation Assistant ----------------")
+    print("1. Recommend videos by category")
+    print("2. Recommend videos by mood")
+    print("3. Filter videos by available watch time")
+    print("4. View my Watch Later list")
+    print("5. Clear my Watch Later list")
+    print("6. About YouTube's innovation")
+    print("7. Exit")
+
+
+def main() -> None:
+    """Program entry point: load data, then loop showing the menu."""
+    catalog = load_catalog()          # all videos the program knows about
+    watch_later: List[Video] = []      # starts empty, grows as the user saves videos
+    running = True                      # controls the loop below
+
+    print_header("YOUTUBE VIDEO RECOMMENDATION ASSISTANT")
+    print("This mini application demonstrates a simplified YouTube-style")
+    print("recommendation system based on user preferences.")
+    print(f"\nVideos loaded: {len(catalog)}")
+    print("Project topic: YouTube as a disruptive innovation in media & broadcasting.")
+
+    # main loop: show the menu, run the chosen feature, repeat until Exit
+    while running:
+        display_menu()
+        choice = read_integer("Choose an option (1-7): ", MENU_MIN_OPTION, MENU_MAX_OPTION)
+
+        if choice == 1:
+            recommend_by_category(catalog, watch_later)
+        elif choice == 2:
+            recommend_by_mood(catalog, watch_later)
+        elif choice == 3:
+            filter_by_time(catalog, watch_later)
+        elif choice == 4:
+            view_watch_later(watch_later)
+        elif choice == 5:
+            clear_watch_later(watch_later)
+        elif choice == 6:
+            about_youtube_innovation()
+        elif choice == 7:
+            running = False   # this stops the while loop, ending the program
+            print("\nThank you for using the YouTube Recommendation Assistant.")
+
+
+if __name__ == "__main__":
+    main()
