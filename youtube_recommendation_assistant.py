@@ -21,6 +21,13 @@ from dataclasses import dataclass
 from typing import List
 
 
+# Numeric limits shared by the prompts and their validation.
+MENU_MIN_OPTION = 1
+MENU_MAX_OPTION = 7
+MIN_WATCH_MINUTES = 5
+MAX_WATCH_MINUTES = 120
+
+
 # ============================================================
 # SECTION 1: Data model
 # ============================================================
@@ -30,11 +37,13 @@ from typing import List
 
 @dataclass
 class Video:
+    """One sample video; duration is in minutes and views are in millions."""
+
     title: str
-    category: str    # e.g. Tech, Music, Fitness, Education, Comedy, Gaming, Vlog
-    mood: str         # e.g. Relaxing, Exciting, Informative, Funny
-    duration: int      # length in minutes
-    views: int         # popularity, in millions (used only for sorting/display)
+    category: str  # e.g. Tech, Music, Fitness, Education, Comedy, Gaming, Vlog
+    mood: str  # e.g. Relaxing, Exciting, Informative, Funny
+    duration: int
+    views: int
     channel: str
     description: str
 
@@ -125,12 +134,14 @@ def read_integer(prompt: str, min_val: int, max_val: int) -> int:
         if not raw:
             print("Invalid input. Please enter a whole number.")
             continue
+        # Decimal digits include Arabic numerals, but exclude symbols such as ².
         if not raw.isdecimal():
             print("Invalid input. Use digits only (for example, 1).")
             continue
         try:
             value = int(raw)
         except ValueError:
+            # Python can reject exceptionally long digit strings during conversion.
             print("Invalid input. That number is too long.")
             continue
         if min_val <= value <= max_val:
@@ -147,14 +158,19 @@ def print_header(title: str) -> None:
 
 def print_video_table_header() -> None:
     """Print the column titles for a table of videos."""
-    print(f"{'#':<3}{'Title':<32}{'Category':<12}{'Mood':<13}{'Min':<6}{'Views(M)':<8}Channel")
+    print(
+        f"{'#':<3}{'Title':<32}{'Category':<12}{'Mood':<13}"
+        f"{'Min':<6}{'Views(M)':<8}Channel"
+    )
     print("-" * 90)
 
 
 def print_video(video: Video, index: int) -> None:
     """Print one video as a numbered row, followed by its description."""
-    print(f"{index:<3}{video.title:<32}{video.category:<12}{video.mood:<13}"
-          f"{video.duration:<6}{video.views:<8}{video.channel}")
+    print(
+        f"{index:<3}{video.title:<32}{video.category:<12}{video.mood:<13}"
+        f"{video.duration:<6}{video.views:<8}{video.channel}"
+    )
     print(f"    {video.description}")
 
 
@@ -180,12 +196,12 @@ def add_to_watch_later(matches: List[Video], watch_later: List[Video]) -> None:
         print("No video added.")
         return
 
-    # ask which one, then convert "1st item" (choice) to a list index (choice - 1)
+    # Displayed choices start at 1; Python list indexes start at 0.
     video_choice = read_integer("Enter the video number to save: ", 1, len(matches))
     selected = matches[video_choice - 1]
 
     # avoid saving the same video twice
-    already_saved = any(v.title == selected.title for v in watch_later)
+    already_saved = any(video.title == selected.title for video in watch_later)
     if already_saved:
         print(f'"{selected.title}" is already in Watch Later.')
         return
@@ -230,7 +246,11 @@ def recommend_by_mood(catalog: List[Video], watch_later: List[Video]) -> None:
 def filter_by_time(catalog: List[Video], watch_later: List[Video]) -> None:
     """Menu option 3: show only videos that fit inside the user's free time."""
     print_header("FILTER BY AVAILABLE WATCH TIME")
-    max_minutes = read_integer("How many minutes do you have? (5-120): ", 5, 120)
+    max_minutes = read_integer(
+        f"How many minutes do you have? ({MIN_WATCH_MINUTES}-{MAX_WATCH_MINUTES}): ",
+        MIN_WATCH_MINUTES,
+        MAX_WATCH_MINUTES,
+    )
 
     # keep only videos that are short enough to finish in the time given
     matches = [v for v in catalog if v.duration <= max_minutes]
@@ -290,10 +310,6 @@ def about_youtube_innovation() -> None:
 # SECTION 5: Menu + main loop
 # ============================================================
 
-MENU_MIN_OPTION = 1
-MENU_MAX_OPTION = 7
-
-
 def display_menu() -> None:
     """Print the list of things the user can choose from."""
     print("\n---------------- YouTube Recommendation Assistant ----------------")
@@ -308,9 +324,9 @@ def display_menu() -> None:
 
 def main() -> None:
     """Program entry point: load data, then loop showing the menu."""
-    catalog = load_catalog()          # all videos the program knows about
-    watch_later: List[Video] = []      # starts empty, grows as the user saves videos
-    running = True                      # controls the loop below
+    catalog = load_catalog()
+    # Watch Later belongs to this session and is shared by the menu functions.
+    watch_later: List[Video] = []
 
     print_header("YOUTUBE VIDEO RECOMMENDATION ASSISTANT")
     print("This mini application demonstrates a simplified YouTube-style")
@@ -318,8 +334,8 @@ def main() -> None:
     print(f"\nVideos loaded: {len(catalog)}")
     print("Project topic: YouTube as a disruptive innovation in media & broadcasting.")
 
-    # main loop: show the menu, run the chosen feature, repeat until Exit
-    while running:
+    # Repeat until the user selects Exit; each feature returns here when finished.
+    while True:
         display_menu()
         choice = read_integer("Choose an option (1-7): ", MENU_MIN_OPTION, MENU_MAX_OPTION)
 
@@ -336,8 +352,8 @@ def main() -> None:
         elif choice == 6:
             about_youtube_innovation()
         elif choice == 7:
-            running = False   # this stops the while loop, ending the program
             print("\nThank you for using the YouTube Recommendation Assistant.")
+            break
 
 
 if __name__ == "__main__":
