@@ -121,11 +121,20 @@ def load_catalog() -> List[Video]:
 def read_integer(prompt: str, min_val: int, max_val: int) -> int:
     """Keep asking until the user types a whole number inside [min_val, max_val]."""
     while True:
-        raw = input(prompt).strip()          # get text from the user
-        if raw.isdigit():                     # check it's only digits (no letters/symbols)
-            value = int(raw)                  # convert text "5" into number 5
-            if min_val <= value <= max_val:   # check it's within the allowed range
-                return value                   # good input -> stop asking
+        raw = input(prompt).strip()
+        if not raw:
+            print("Invalid input. Please enter a whole number.")
+            continue
+        if not raw.isdecimal():
+            print("Invalid input. Use digits only (for example, 1).")
+            continue
+        try:
+            value = int(raw)
+        except ValueError:
+            print("Invalid input. That number is too long.")
+            continue
+        if min_val <= value <= max_val:
+            return value
         print(f"Invalid input. Enter a number from {min_val} to {max_val}.")
 
 
@@ -332,4 +341,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (EOFError, KeyboardInterrupt):
+        print("\nInput interrupted. Exiting the YouTube Recommendation Assistant.")
